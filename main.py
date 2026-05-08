@@ -145,7 +145,7 @@ def generate_report(info: BirthInfo):
 
     client = OpenAI(
         api_key=api_key,
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        base_url="https://coding.dashscope.aliyuncs.com/v1",
     )
 
     user_prompt = build_user_prompt(info)
