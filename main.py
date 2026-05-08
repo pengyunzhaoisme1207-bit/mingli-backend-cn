@@ -47,8 +47,17 @@ SYSTEM_PROMPT = """You are a master-level Chinese astrology analyst specializing
 4. NEVER use a single perspective to judge
 5. NEVER split major luck cycles into fragments
 
+## Bilingual Output Requirement (MANDATORY)
+All reports MUST be bilingual Chinese-English:
+- Section titles: 中文标题 / English Title
+- Core terminology: 中文术语（English translation）
+- Reading content: Chinese paragraph first, blank line, then English paragraph
+- Classical citations: Original Chinese + (English translation, source)
+- Tables: Bilingual headers, Chinese-English content
+- Numbers, ratings, years: Write once only, no duplication
+- NO pure-English, NO pure-Chinese, NO machine-translation tone
+
 ## Output Requirements
-- The entire report MUST be in ENGLISH
 - Use markdown formatting with tables where appropriate
 - Cite classical sources where applicable
 - Include danger ratings (★☆ to ★★★★★) for unfavorable years
@@ -57,13 +66,13 @@ SYSTEM_PROMPT = """You are a master-level Chinese astrology analyst specializing
 ## Bazi Methodology (from SKILL.md)
 Follow the 15-step chart analysis: encode birth info, identify day master, observe month command, assess strength, temperature regulation, pattern determination, image analysis, useful gods, temperament, health, six relations, wealth/career, luck cycles, auxiliary stars, comprehensive judgment.
 
-Use the Four Masters voting method: Xu Lewu (pattern + seasonal), Liang Xiangrun (three-track system), Yuan Shushan (sixteen-character method), Wei Qianli (eight-step method).
+Use the Four Masters voting method: Xu Lewu (徐乐吾, pattern + seasonal), Liang Xiangrun (梁湘润, three-track system), Yuan Shushan (袁树珊, sixteen-character method), Wei Qianli (韦千里, eight-step method).
 
 ## Zi Wei Dou Shu
-Include Life Palace, Body Palace, Three Parties Four Courts, 14 Major Stars, auxiliary stars, Four Transformations, and major luck analysis.
+Include Life Palace (命宫), Body Palace (身宫), Three Parties Four Courts (三方四正), 14 Major Stars, auxiliary stars, Four Transformations (四化), and major luck analysis.
 
 ## Cross Validation
-Compare Bazi and Zi Wei across 8 dimensions: wealth, career, marriage, travel, health, noble people, golden period, worst period."""
+Compare Bazi and Zi Wei across 8 dimensions: wealth (财运), career (事业), marriage (婚姻), travel (迁移), health (健康), noble people (贵人), golden period (黄金期), worst period (最差期)."""
 
 
 class BirthInfo(BaseModel):
@@ -83,44 +92,47 @@ def build_user_prompt(info: BirthInfo) -> str:
 **Gender**: {info.gender}
 **Birth Place**: {info.birth_place}
 
-You MUST produce the output as a structured report with EXACTLY the following 10 chapters. Each chapter must begin with "## Chapter N:" (where N is 1-10) so it can be parsed:
+You MUST produce the output as a structured report with EXACTLY the following 10 chapters. Each chapter must begin with "## Chapter N: Title / 中文标题" (where N is 1-10) so it can be parsed:
 
-## Chapter 1: Bazi Chart Setup
+## Chapter 1: Bazi Chart Setup / 八字排盘
 Include: Four Pillars table (Year/Month/Day/Hour with Heavenly Stem + Earthly Branch), Hidden Stems, Na Yin, Void (空亡), Five Elements distribution count, Day Master identification with strength assessment.
 
-## Chapter 2: Day Master Strength & Pattern
-Include: Month command analysis (when-令), Day Master strength assessment with allied/opposing forces, Pattern determination (格局), Favorable elements (用神/喜神), Unfavorable elements (忌神/仇神).
+## Chapter 2: Day Master Strength & Pattern / 日主强弱与格局
+Include: Month command analysis (当令之气), Day Master strength assessment with allied/opposing forces, Pattern determination (格局), Favorable elements (用神/喜神), Unfavorable elements (忌神/仇神).
 
-## Chapter 3: Image, Temperament & Health
-Include: Chart image analysis (clarity/purity/source flow), Temperament profile (Ten Gods prominence), Health indicators (Five Elements imbalance — which organs to watch).
+## Chapter 3: Image, Temperament & Health / 形象、性情与健康
+Include: Chart image analysis (清浊真假源流), Temperament profile (十神突出), Health indicators (五行受克 — which organs to watch).
 
-## Chapter 4: Family Relations & Wealth/Career
-Include: Six Relations (宫位+十神 — parents, siblings, spouse, children), Wealth analysis (财星 state and accumulation pattern), Career analysis (官星 state and suitable fields).
+## Chapter 4: Family Relations & Wealth/Career / 六亲与财官
+Include: Six Relations (宫位+十神 — parents 父母, siblings 兄弟, spouse 配偶, children 子女), Wealth analysis (财星状态), Career analysis (官星状态).
 
-## Chapter 5: Major Luck Cycles & Annual Years
-Include: Starting age calculation, Full major luck pillars table (8 pillars, each 10 years, with Ten Gods), Current major luck analysis, Next 3 annual years with danger ratings.
+## Chapter 5: Major Luck Cycles & Annual Years / 大运流年
+Include: Starting age calculation (起运岁数), Full major luck pillars table (8 pillars, each 10 years, with Ten Gods), Current major luck analysis, Next 3 annual years with danger ratings (凶度评分).
 
-## Chapter 6: Supplementary Calculations
-Include: Life Palace (命宫 — position, stems, analysis), Minor Limit (小限 — current year), Auspicious Stars (神煞 — Tian Yi Nobleman, Traveling Horse, etc.), Illness & Remedy theory (病药说).
+## Chapter 6: Supplementary Calculations / 补充推算
+Include: Life Palace (命宫), Minor Limit (小限), Auspicious Stars (神煞 — Tian Yi Nobleman 天乙贵人, Traveling Horse 驿马, etc.), Illness & Remedy theory (病药说).
 
-## Chapter 7: Four Masters Voting Results
+## Chapter 7: Four Masters Voting Results / 四家投票
 Include a table showing how each master (Xu Lewu 徐乐吾, Liang Xiangrun 梁湘润, Yuan Shushan 袁树珊, Wei Qianli 韦千里) independently assesses: Pattern, Day Master strength, Favorable elements, Current luck outlook, Wealth outlook. Include a consensus row with confidence level.
 
-## Chapter 8: Zi Wei Dou Shu Analysis
-Include: Life Palace main star(s) and Three Parties Four Courts, Body Palace analysis, Major Stars and auxiliary stars in key palaces, Current major luck direction, Key patterns observed.
+## Chapter 8: Zi Wei Dou Shu Analysis / 紫微斗数分析
+Include: Life Palace (命宫) main star(s) and Three Parties Four Courts (三方四正), Body Palace (身宫) analysis, Major Stars and auxiliary stars in key palaces, Current major luck direction, Key patterns observed.
 
-## Chapter 9: Dual-System Cross Validation
-Include a table comparing Bazi conclusions vs Zi Wei conclusions across 8 dimensions (Wealth, Career, Marriage, Travel, Health, Noble People, Golden Period, Worst Period). For each dimension show: Bazi finding, Zi Wei finding, Combined judgment. Include a summary of how many dimensions are fully consistent.
+## Chapter 9: Dual-System Cross Validation / 双系统交叉验证
+Include a table comparing Bazi vs Zi Wei across 8 dimensions (Wealth 财运, Career 事业, Marriage 婚姻, Travel 迁移, Health 健康, Noble People 贵人, Golden Period 黄金期, Worst Period 最差期). For each: Bazi finding, Zi Wei finding, Combined judgment. Summary of consistent dimensions.
 
-## Chapter 10: Comprehensive Advice
-Include: Breakthrough direction (what fields/environments to leverage), Golden window (which years are best), Caution points (which years to avoid major decisions), Life theme (one-sentence summary of the chart's core narrative).
+## Chapter 10: Comprehensive Advice / 综合建议
+Include: Breakthrough direction (破局方向), Golden window (黄金窗口), Caution points (注意事项), Life theme (格局总评).
 
 IMPORTANT FORMATTING RULES:
-- Each chapter MUST start with "## Chapter N: Title" exactly
-- Use markdown tables for data presentation
+- Each chapter MUST start with "## Chapter N: English / 中文" exactly
+- BILINGUAL: Every title in Chinese+English; core terms as 中文（English）; readings as Chinese paragraph then English; tables with bilingual headers
+- Classical citations: Original Chinese + (English translation, source name)
+- Numbers/ratings/years: Write once only, no duplication
+- No machine-translation tone — natural Chinese first, then natural English
 - No emojis
-- Write in clear, professional English suitable for educated readers
-- Cite classical sources (Di Tian Sui, Zi Ping Zhen Quan, Qiong Tong Bao Jian, etc.) where applicable
+- Clear, professional language for educated readers
+- Cite classical sources (Di Tian Sui 滴天髓, Zi Ping Zhen Quan 子平真诠, Qiong Tong Bao Jian 穷通宝鉴, etc.)
 - Be specific and detailed — this is a premium report"""
 
 
@@ -175,7 +187,6 @@ def generate_report(info: BirthInfo):
                 now = time.time()
 
                 # Send heartbeat if no data sent for HEARTBEAT_INTERVAL seconds
-                # This keeps the connection alive during the reasoning phase
                 if now - last_heartbeat >= HEARTBEAT_INTERVAL:
                     yield f"data: {json.dumps({'heartbeat': True, 'elapsed': round(now - start_time, 1)})}\n\n"
                     last_heartbeat = now
@@ -185,7 +196,7 @@ def generate_report(info: BirthInfo):
 
                 delta = chunk.choices[0].delta
 
-                # Content chunks — send actual report text
+                # Content chunks
                 if delta.content:
                     content = delta.content
                     full_text += content
@@ -241,13 +252,10 @@ def _parse_chapters(text: str) -> dict:
     current_lines = []
 
     for line in text.split("\n"):
-        # Match "## Chapter N: ..." or "## Chapter N"
         if line.strip().startswith("## Chapter "):
-            # Save previous chapter
             if current_chapter is not None:
                 chapters[current_chapter] = "\n".join(current_lines).strip()
 
-            # Extract chapter number
             match = re.search(r"## Chapter (\d+)", line)
             if match:
                 num = int(match.group(1))
@@ -260,7 +268,6 @@ def _parse_chapters(text: str) -> dict:
             if current_chapter is not None:
                 current_lines.append(line)
 
-    # Save last chapter
     if current_chapter is not None:
         chapters[current_chapter] = "\n".join(current_lines).strip()
 
@@ -269,7 +276,6 @@ def _parse_chapters(text: str) -> dict:
 
 def _extract_pillars(ch1_content: str) -> dict:
     """Extract pillar information from Chapter 1 content."""
-    # Default placeholders — in production, would parse from actual content
     return {
         "year": {"stem": "—", "branch": "—"},
         "month": {"stem": "—", "branch": "—"},
