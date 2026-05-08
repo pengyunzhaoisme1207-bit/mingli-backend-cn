@@ -156,6 +156,8 @@ def generate_report(info: BirthInfo):
         batch = []
         chunk_count = 0
         start_time = time.time()
+        last_heartbeat = time.time()
+        HEARTBEAT_INTERVAL = 5  # seconds — prevents Railway HTTP timeout
 
         try:
             response = client.chat.completions.create(
@@ -170,8 +172,22 @@ def generate_report(info: BirthInfo):
             )
 
             for chunk in response:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
+                now = time.time()
+
+                # Send heartbeat if no data sent for HEARTBEAT_INTERVAL seconds
+                # This keeps the connection alive during the reasoning phase
+                if now - last_heartbeat >= HEARTBEAT_INTERVAL:
+                    yield f"data: {json.dumps({'heartbeat': True, 'elapsed': round(now - start_time, 1)})}\n\n"
+                    last_heartbeat = now
+
+                if not chunk.choices:
+                    continue
+
+                delta = chunk.choices[0].delta
+
+                # Content chunks — send actual report text
+                if delta.content:
+                    content = delta.content
                     full_text += content
                     batch.append(content)
                     chunk_count += 1
@@ -180,9 +196,9 @@ def generate_report(info: BirthInfo):
                     if chunk_count % 5 == 0:
                         data = {"chunk": "".join(batch), "elapsed": round(time.time() - start_time, 1)}
                         batch.clear()
-                        # json.dumps handles all escaping; replace literal newlines for SSE safety
                         line = json.dumps(data).replace("\n", "\\n")
                         yield f"data: {line}\n\n"
+                        last_heartbeat = time.time()
 
             # Flush remaining
             if batch:
@@ -190,6 +206,7 @@ def generate_report(info: BirthInfo):
                 batch.clear()
                 line = json.dumps(data).replace("\n", "\\n")
                 yield f"data: {line}\n\n"
+                last_heartbeat = time.time()
 
             # Send final event with parsed structure
             chapters = _parse_chapters(full_text)
