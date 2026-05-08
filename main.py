@@ -30,17 +30,25 @@ FRONTEND_DIR = Path(__file__).parent.parent / "frontend" / "homepage"
 if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
-# ── Load SKILL.md as system prompt ──
-SKILL_PATH = Path.home() / ".hermes" / "skills" / "08-external-skills" / "bazi-ziwei-mingli" / "SKILL.md"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SKILL_MD_PATH = os.path.join(BASE_DIR, "skill/SKILL.md")
+BOOKS_DIR = os.path.join(BASE_DIR, "skill/books/")
+CORE_DIR = os.path.join(BASE_DIR, "skill/core/")
+
+# Fallback to global paths if bundled copies don't exist
+_global_skill = Path.home() / ".hermes" / "skills" / "08-external-skills" / "bazi-ziwei-mingli" / "SKILL.md"
+_global_books = os.path.expanduser("~/.hermes/skills/08-external-skills/bazi-ziwei-mingli/books/")
+_global_kg = os.path.expanduser("~/Obsidian/内容创作工作流/20-MATERIALS/bazi-kg/")
+
+SKILL_PATH = Path(SKILL_MD_PATH) if os.path.exists(SKILL_MD_PATH) else _global_skill
 if SKILL_PATH.exists():
     with open(SKILL_PATH, "r", encoding="utf-8") as f:
         SKILL_CONTENT = f.read()
 else:
     SKILL_CONTENT = ""
 
-# ── Knowledge Base paths ──
-BOOKS_DIR = os.path.expanduser("~/.hermes/skills/08-external-skills/bazi-ziwei-mingli/books/")
-KG_DIR = os.path.expanduser("~/Obsidian/内容创作工作流/20-MATERIALS/bazi-kg/")
+BOOKS_DIR = BOOKS_DIR if os.path.isdir(BOOKS_DIR) else _global_books
+KG_DIR = CORE_DIR if os.path.isdir(CORE_DIR) else _global_kg
 
 
 def search_knowledge_base(queries: list[str], max_results: int = 8) -> str:
@@ -91,21 +99,13 @@ SYSTEM_PROMPT = """You are a master-level Chinese astrology analyst specializing
 4. NEVER use a single perspective to judge
 5. NEVER split major luck cycles into fragments
 
-## Bilingual Output Requirement (MANDATORY)
-All reports MUST be bilingual Chinese-English:
-- Section titles: 中文标题 / English Title
-- Core terminology: 中文术语（English translation）
-- Reading content: Chinese paragraph first, blank line, then English paragraph
-- Classical citations: Original Chinese + (English translation, source)
-- Tables: Bilingual headers, Chinese-English content
-- Numbers, ratings, years: Write once only, no duplication
-- NO pure-English, NO pure-Chinese, NO machine-translation tone
-
-## Output Requirements
+## Output Requirements (纯中文输出)
+- ALL output must be in CHINESE ONLY
 - Use markdown formatting with tables where appropriate
-- Cite classical sources where applicable
+- Cite classical sources where applicable (keep original Chinese text)
 - Include danger ratings (★☆ to ★★★★★) for unfavorable years
 - Follow the 10-chapter structure exactly
+- Technical terms: use Chinese terminology, English equivalents optional in parentheses
 
 ## Bazi Methodology (from SKILL.md)
 Follow the 15-step chart analysis: encode birth info, identify day master, observe month command, assess strength, temperature regulation, pattern determination, image analysis, useful gods, temperament, health, six relations, wealth/career, luck cycles, auxiliary stars, comprehensive judgment.
@@ -166,27 +166,27 @@ def build_user_prompt(info: BirthInfo) -> str:
 ## 输出结构：10章报告
 
 报告必须包含以下10个章节。每个章节标题格式为：
-## Chapter N: 中文标题 / English Title
+## Chapter N: 中文标题
 
-### Chapter 1: 八字排盘 / Bazi Chart Setup
+### Chapter 1: 八字排盘
 四柱表（年/月/日/时干支+藏干+纳音+空亡）、五行分布计数、日主识别+强弱评估
 
-### Chapter 2: 日主强弱与格局 / Day Master Strength & Pattern
+### Chapter 2: 日主强弱与格局
 月令分析、日主强弱评估（同方/异方加权）、格局判定（取格依据+相神+成败）、用神/喜神/忌神
 
-### Chapter 3: 形象、性情与健康 / Image, Temperament & Health
+### Chapter 3: 形象、性情与健康
 清浊真假源流、十神性情、五行疾病提示
 
-### Chapter 4: 六亲与财官 / Family, Wealth & Career
+### Chapter 4: 六亲与财官
 六亲（父母/兄弟/配偶/子女）、财运、事业
 
-### Chapter 5: 大运流年 / Major Luck Cycles & Annual Years
+### Chapter 5: 大运流年
 起运计算、完整大运表（8步×10年）、当前大运分析、未来3年流年+凶度评分
 
-### Chapter 6: 补充推算 / Supplementary Calculations
+### Chapter 6: 补充推算
 命宫、小限、神煞（天乙贵人/驿马/华盖等）、病药说
 
-### Chapter 7: 四家投票 / Four Masters Voting
+### Chapter 7: 四家投票
 **必须以完整表格形式输出**，不可合并或省略：
 
 | 家 | 格局 | 日主强弱 | 用神/喜神 | 当前大运 | 财运 |
@@ -197,7 +197,7 @@ def build_user_prompt(info: BirthInfo) -> str:
 | 韦千里 | | | | | |
 | 共识 | | | | | |
 
-### Chapter 8: 紫微斗数分析 / Zi Wei Dou Shu Analysis
+### Chapter 8: 紫微斗数分析
 **必须完整排盘，不可只给框架**：
 - 命宫位置+主星+辅星煞星
 - 身宫位置+分析
@@ -206,7 +206,7 @@ def build_user_prompt(info: BirthInfo) -> str:
 - 四化分布
 - 大运方向
 
-### Chapter 9: 双系统交叉验证 / Dual-System Cross Validation
+### Chapter 9: 双系统交叉验证
 **必须有完整8维度对照表**：
 
 | 维度 | 八字结论 | 紫微结论 | 综合判断 |
@@ -220,33 +220,23 @@ def build_user_prompt(info: BirthInfo) -> str:
 | 黄金期 | | | |
 | 最差期 | | | |
 
-### Chapter 10: 综合建议 / Comprehensive Advice
+### Chapter 10: 综合建议
 破局方向、黄金窗口、注意事项、格局总评
 
-## 双语格式规范（强制执行）
+## 中文格式规范（强制执行）
 
-**每个段落先写中文，空一行，然后写对应的完整英文翻译。**
+**全文使用中文输出。**
 
-英文翻译必须是完整段落的逐句翻译，不是总结、不是概述。
-
-示例格式：
-> 庚金日主，生于丑月，月令己土正印透干，得月令之权。土金两旺，日主极强。
->
-> Geng Metal Day Master, born in the Chou (丑) month, with Ji Earth Direct Resource revealed in the month stem, commanding the Month Pillar's authority. Both Earth and Metal are strong — the Day Master is extremely powerful.
-
-**术语格式**：
+术语格式：
 - 正官格（Direct Officer Pattern）
 - 用神（Favorable Element）
 - 大运（Major Luck Cycle）
 
-**典籍引用格式**：
-> 《滴天髓》原文："从强者，势不可挡。"
-> As stated in Dripping Sky Marrow (滴天髓): "The extremely strong chart cannot be resisted."
+典籍引用格式：
+> 《滴天髓》原文："从强者，势不可挡。" —— 《滴天髓》
 
 **禁止**：
 - 纯英文输出
-- 纯中文输出
-- 英文只是总结而非完整翻译
 - 机器翻译腔
 
 ## 重要
