@@ -1,0 +1,9 @@
+fastapi==0.115.0
+httpx==0.28.1
+jiter==0.14.0
+openai==2.35.1
+pydantic==2.9.0
+pydantic_core==2.23.2
+python-dotenv==1.0.1
+starlette==0.38.6
+uvicorn==0.30.0
