@@ -128,56 +128,133 @@ class BirthInfo(BaseModel):
 
 
 def build_user_prompt(info: BirthInfo) -> str:
-    return f"""Generate a complete Bazi + Zi Wei Dou Shu destiny report for the following person.
+    return f"""请为以下用户生成完整的八字+紫微斗数双语命理报告。
 
-**Name**: {info.name}
-**Birth Date (Gregorian)**: {info.birth_date}
-**Birth Time**: {info.birth_time}
-**Gender**: {info.gender}
-**Birth Place**: {info.birth_place}
+## 用户信息
+- 姓名：{info.name}
+- 出生日期（公历）：{info.birth_date}
+- 出生时间：{info.birth_time}
+- 出生地点：{info.birth_place}
+- 性别：{info.gender}
 
-You MUST produce the output as a structured report with EXACTLY the following 10 chapters. Each chapter must begin with "## Chapter N: Title / 中文标题" (where N is 1-10) so it can be parsed:
+## 核心要求：十五步流程，不得跳步
 
-## Chapter 1: Bazi Chart Setup / 八字排盘
-Include: Four Pillars table (Year/Month/Day/Hour with Heavenly Stem + Earthly Branch), Hidden Stems, Na Yin, Void (空亡), Five Elements distribution count, Day Master identification with strength assessment.
+你必须严格按照 SKILL.md 中规定的十五步流程执行，每一步都必须输出，不得跳过、不得合并、不得省略：
 
-## Chapter 2: Day Master Strength & Pattern / 日主强弱与格局
-Include: Month command analysis (当令之气), Day Master strength assessment with allied/opposing forces, Pattern determination (格局), Favorable elements (用神/喜神), Unfavorable elements (忌神/仇神).
+1. **编码**：阳历→真太阳时→四柱干支+藏干→大运→起运年龄→流年
+2. **识日主**：十天干性质、喜忌、阴阳区分
+3. **观月令**：节气/季节、透干情况、月令本气
+4. **日主强弱**：五行统计、同方/异方加权、当令修正
+5. **调候**：穷通宝鉴十干配十二月
+6. **格局**：取格依据、相神、成败
+7. **形象**：清浊/真假/源流/通关
+8. **用神**：用神/喜神/忌神/仇神/闲神
+9. **性情**：十神突出→综合个性
+10. **疾病**：五行受克→对应脏腑
+11. **六亲**：宫位+十神参合
+12. **财官**：官星+财星状态
+13. **大运流年**：起运计算→大运表（8步）→当前大运→未来3年流年
+14. **神煞辅助**：天乙贵人/文昌/驿马/华盖/桃花/羊刃/空亡
+15. **综合判断**：多角度验证，必须验证已知事实
 
-## Chapter 3: Image, Temperament & Health / 形象、性情与健康
-Include: Chart image analysis (清浊真假源流), Temperament profile (十神突出), Health indicators (五行受克 — which organs to watch).
+补充步骤也必须执行并输出：
+- **命宫**：位置+天干+分析
+- **小限**：当前年小限
+- **空亡**：从日柱推算
+- **病药说**：病在何处、药在何方
 
-## Chapter 4: Family Relations & Wealth/Career / 六亲与财官
-Include: Six Relations (宫位+十神 — parents 父母, siblings 兄弟, spouse 配偶, children 子女), Wealth analysis (财星状态), Career analysis (官星状态).
+## 输出结构：10章报告
 
-## Chapter 5: Major Luck Cycles & Annual Years / 大运流年
-Include: Starting age calculation (起运岁数), Full major luck pillars table (8 pillars, each 10 years, with Ten Gods), Current major luck analysis, Next 3 annual years with danger ratings (凶度评分).
+报告必须包含以下10个章节。每个章节标题格式为：
+## Chapter N: 中文标题 / English Title
 
-## Chapter 6: Supplementary Calculations / 补充推算
-Include: Life Palace (命宫), Minor Limit (小限), Auspicious Stars (神煞 — Tian Yi Nobleman 天乙贵人, Traveling Horse 驿马, etc.), Illness & Remedy theory (病药说).
+### Chapter 1: 八字排盘 / Bazi Chart Setup
+四柱表（年/月/日/时干支+藏干+纳音+空亡）、五行分布计数、日主识别+强弱评估
 
-## Chapter 7: Four Masters Voting Results / 四家投票
-Include a table showing how each master (Xu Lewu 徐乐吾, Liang Xiangrun 梁湘润, Yuan Shushan 袁树珊, Wei Qianli 韦千里) independently assesses: Pattern, Day Master strength, Favorable elements, Current luck outlook, Wealth outlook. Include a consensus row with confidence level.
+### Chapter 2: 日主强弱与格局 / Day Master Strength & Pattern
+月令分析、日主强弱评估（同方/异方加权）、格局判定（取格依据+相神+成败）、用神/喜神/忌神
 
-## Chapter 8: Zi Wei Dou Shu Analysis / 紫微斗数分析
-Include: Life Palace (命宫) main star(s) and Three Parties Four Courts (三方四正), Body Palace (身宫) analysis, Major Stars and auxiliary stars in key palaces, Current major luck direction, Key patterns observed.
+### Chapter 3: 形象、性情与健康 / Image, Temperament & Health
+清浊真假源流、十神性情、五行疾病提示
 
-## Chapter 9: Dual-System Cross Validation / 双系统交叉验证
-Include a table comparing Bazi vs Zi Wei across 8 dimensions (Wealth 财运, Career 事业, Marriage 婚姻, Travel 迁移, Health 健康, Noble People 贵人, Golden Period 黄金期, Worst Period 最差期). For each: Bazi finding, Zi Wei finding, Combined judgment. Summary of consistent dimensions.
+### Chapter 4: 六亲与财官 / Family, Wealth & Career
+六亲（父母/兄弟/配偶/子女）、财运、事业
 
-## Chapter 10: Comprehensive Advice / 综合建议
-Include: Breakthrough direction (破局方向), Golden window (黄金窗口), Caution points (注意事项), Life theme (格局总评).
+### Chapter 5: 大运流年 / Major Luck Cycles & Annual Years
+起运计算、完整大运表（8步×10年）、当前大运分析、未来3年流年+凶度评分
 
-IMPORTANT FORMATTING RULES:
-- Each chapter MUST start with "## Chapter N: English / 中文" exactly
-- BILINGUAL: Every title in Chinese+English; core terms as 中文（English）; readings as Chinese paragraph then English; tables with bilingual headers
-- Classical citations: Original Chinese + (English translation, source name)
-- Numbers/ratings/years: Write once only, no duplication
-- No machine-translation tone — natural Chinese first, then natural English
-- No emojis
-- Clear, professional language for educated readers
-- Cite classical sources (Di Tian Sui 滴天髓, Zi Ping Zhen Quan 子平真诠, Qiong Tong Bao Jian 穷通宝鉴, etc.)
-- Be specific and detailed — this is a premium report"""
+### Chapter 6: 补充推算 / Supplementary Calculations
+命宫、小限、神煞（天乙贵人/驿马/华盖等）、病药说
+
+### Chapter 7: 四家投票 / Four Masters Voting
+**必须以完整表格形式输出**，不可合并或省略：
+
+| 家 | 格局 | 日主强弱 | 用神/喜神 | 当前大运 | 财运 |
+|---|---|---|---|---|---|
+| 徐乐吾 | | | | | |
+| 梁湘润 | | | | | |
+| 袁树珊 | | | | | |
+| 韦千里 | | | | | |
+| 共识 | | | | | |
+
+### Chapter 8: 紫微斗数分析 / Zi Wei Dou Shu Analysis
+**必须完整排盘，不可只给框架**：
+- 命宫位置+主星+辅星煞星
+- 身宫位置+分析
+- 三方四正
+- 十二宫位分布
+- 四化分布
+- 大运方向
+
+### Chapter 9: 双系统交叉验证 / Dual-System Cross Validation
+**必须有完整8维度对照表**：
+
+| 维度 | 八字结论 | 紫微结论 | 综合判断 |
+|---|---|---|---|
+| 财运 | | | |
+| 事业 | | | |
+| 婚姻 | | | |
+| 迁移 | | | |
+| 健康 | | | |
+| 贵人 | | | |
+| 黄金期 | | | |
+| 最差期 | | | |
+
+### Chapter 10: 综合建议 / Comprehensive Advice
+破局方向、黄金窗口、注意事项、格局总评
+
+## 双语格式规范（强制执行）
+
+**每个段落先写中文，空一行，然后写对应的完整英文翻译。**
+
+英文翻译必须是完整段落的逐句翻译，不是总结、不是概述。
+
+示例格式：
+> 庚金日主，生于丑月，月令己土正印透干，得月令之权。土金两旺，日主极强。
+>
+> Geng Metal Day Master, born in the Chou (丑) month, with Ji Earth Direct Resource revealed in the month stem, commanding the Month Pillar's authority. Both Earth and Metal are strong — the Day Master is extremely powerful.
+
+**术语格式**：
+- 正官格（Direct Officer Pattern）
+- 用神（Favorable Element）
+- 大运（Major Luck Cycle）
+
+**典籍引用格式**：
+> 《滴天髓》原文："从强者，势不可挡。"
+> As stated in Dripping Sky Marrow (滴天髓): "The extremely strong chart cannot be resisted."
+
+**禁止**：
+- 纯英文输出
+- 纯中文输出
+- 英文只是总结而非完整翻译
+- 机器翻译腔
+
+## 重要
+- 不用 emoji
+- 使用表格呈现数据
+- 引用典籍时注明出处
+- 凶年用凶度评分（★☆~★★★★★）
+- 这是一份付费级别的深度报告，内容必须详尽充实"""
 
 
 @app.get("/health")
