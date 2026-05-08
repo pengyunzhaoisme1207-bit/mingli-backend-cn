@@ -23,7 +23,7 @@ def test_streaming_report():
     """Test SSE streaming endpoint with timing metrics."""
     print("▸ POST /generate-report (streaming)")
     payload = {
-        "name": "Stream Test",
+        "name": "典籍检索测试",
         "birth_date": "1990-06-15",
         "birth_time": "14:30",
         "birth_place": "Shanghai, China",
@@ -50,7 +50,7 @@ def test_streaming_report():
 
         buffer = ""
         while True:
-            chunk = res.read(1024).decode("utf-8")
+            chunk = res.read(4096).decode("utf-8")
             if not chunk:
                 break
 
@@ -60,14 +60,12 @@ def test_streaming_report():
 
             buffer += chunk
 
-            # Parse complete SSE events from buffer
             while "\n\n" in buffer:
                 event_str, buffer = buffer.split("\n\n", 1)
                 event_str = event_str.strip()
                 if not event_str:
                     continue
 
-                # Extract data line
                 for line in event_str.split("\n"):
                     if line.startswith("data: "):
                         event_count += 1
@@ -92,17 +90,40 @@ def test_streaming_report():
 
     total_time = time.time() - start
 
-    # Verify content
+    # Parse chapters
     chapters = _parse_chapters(full_text)
     print(f"  ⏱ total time: {total_time:.1f}s")
     print(f"  ⏱ SSE events: {event_count}")
     print(f"  total chars:  {len(full_text)}")
     print(f"  chapters:     {len(chapters)} found")
 
-    for key in ["ch1", "ch2", "ch5", "ch10"]:
-        content = chapters.get(key, "")
-        preview = content[:80].replace("\n", " ")
-        print(f"    {key}: {preview}{'...' if len(content) > 80 else ''}")
+    # Print Chapter 1 preview
+    ch1 = chapters.get("ch1", "")
+    print(f"\n{'='*50}")
+    print("  CHAPTER 1 PREVIEW:")
+    print(f"{'='*50}")
+    # Print first 2000 chars of chapter 1
+    preview = ch1[:2000]
+    print(preview)
+    if len(ch1) > 2000:
+        print(f"\n... (truncated, total {len(ch1)} chars)")
+    print(f"{'='*50}\n")
+
+    # Check for classical citations
+    citation_keywords = ["来源", "滴天髓", "子平真诠", "穷通宝鉴", "渊海子平",
+                         "三命通会", "命理探原", "Dripping Sky", "Zi Ping",
+                         "Qiong Tong", "原著", "出处"]
+    citations_found = []
+    for kw in citation_keywords:
+        if kw in full_text:
+            citations_found.append(kw)
+
+    print(f"  📚 Classical citations detected: {len(citations_found)}")
+    if citations_found:
+        for c in citations_found[:10]:
+            print(f"    ✓ {c}")
+    else:
+        print("    ⚠ No classical citation keywords found")
 
     # Verify all 10 chapters present
     expected = [f"ch{i}" for i in range(1, 11)]
@@ -148,7 +169,7 @@ def _parse_chapters(text: str) -> dict:
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("  MÍNG LÌ — API Streaming Test")
+    print("  MÍNG LÌ — API Streaming Test (with KB retrieval)")
     print("=" * 50 + "\n")
 
     try:

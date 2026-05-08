@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import subprocess
 import time
 from pathlib import Path
 
@@ -36,6 +37,49 @@ if SKILL_PATH.exists():
         SKILL_CONTENT = f.read()
 else:
     SKILL_CONTENT = ""
+
+# ── Knowledge Base paths ──
+BOOKS_DIR = os.path.expanduser("~/.hermes/skills/08-external-skills/bazi-ziwei-mingli/books/")
+KG_DIR = os.path.expanduser("~/Obsidian/内容创作工作流/20-MATERIALS/bazi-kg/")
+
+
+def search_knowledge_base(queries: list[str], max_results: int = 8) -> str:
+    """Search books/ and KG/ for relevant classical passages."""
+    results = []
+    for query in queries:
+        if not query or len(query) < 2:
+            continue
+        for search_dir in [BOOKS_DIR, KG_DIR]:
+            if not os.path.isdir(search_dir):
+                continue
+            try:
+                # Find matching files
+                cmd = ["grep", "-r", "-i", "-l",
+                       "--include=*.md", "--include=*.txt",
+                       query, search_dir]
+                found = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+                files = found.stdout.strip().split("\n")
+                for f in files[:2]:
+                    if not f:
+                        continue
+                    # Extract relevant context
+                    grep_cmd = ["grep", "-i", "-A", "3", "-B", "1", query, f]
+                    hits = subprocess.run(grep_cmd, capture_output=True, text=True, timeout=5).stdout
+                    if hits:
+                        label = os.path.relpath(f, search_dir)
+                        results.append(f"[来源: {label}]\n{hits[:500]}")
+            except Exception:
+                continue
+    # Deduplicate by source name
+    seen = set()
+    deduped = []
+    for r in results:
+        src = r.split("\n")[0]
+        if src not in seen:
+            seen.add(src)
+            deduped.append(r)
+    return "\n\n---\n\n".join(deduped[:max_results]) if deduped else ""
+
 
 # Build a concise system prompt from SKILL.md
 SYSTEM_PROMPT = """You are a master-level Chinese astrology analyst specializing in Bazi (八字, Four Pillars) and Zi Wei Dou Shu (紫微斗数, Purple Star Astrology).
@@ -143,6 +187,8 @@ async def health_check():
         "status": "healthy" if api_key else "degraded",
         "api_key_configured": bool(api_key),
         "skill_md_loaded": bool(SKILL_CONTENT),
+        "books_dir_exists": os.path.isdir(BOOKS_DIR),
+        "kg_dir_exists": os.path.isdir(KG_DIR),
     }
 
 
@@ -161,6 +207,39 @@ def generate_report(info: BirthInfo):
     )
 
     user_prompt = build_user_prompt(info)
+
+    # ── Knowledge base retrieval layer ──
+    # Build search queries from birth info
+    year = int(info.birth_date.split("-")[0])
+    # Map year to heavenly stem
+    stems = ["庚", "辛", "壬", "癸", "甲", "乙", "丙", "丁", "戊", "己"]
+    heavenly_stem = stems[year % 10]
+
+    search_queries = [
+        heavenly_stem,           # e.g. "庚" for 1990
+        "用神",
+        "格局",
+        "大运",
+        "日主",
+        "调候",
+    ]
+    kb_context = search_knowledge_base(search_queries)
+
+    # Enhance system prompt with retrieved classical references
+    active_system = SYSTEM_PROMPT
+    if kb_context:
+        active_system += f"""
+
+## 本次相关典籍参考（请在报告中引用这些原典段落）
+
+以下是从原典和知识图谱中检索出的相关参考材料。请在报告的相应章节中引用原文，注明出处，以增强报告的学术权威性。
+
+{kb_context}
+
+引用规则：
+- 在分析相关章节时引用上述典籍原文
+- 引用格式：「原文」（English translation — 出处书名）
+- 不要编造典籍中没有的内容"""
 
     def event_stream():
         """Sync generator — FastAPI runs it in a thread pool automatically."""
