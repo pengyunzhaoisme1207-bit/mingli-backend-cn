@@ -99,6 +99,7 @@ SYSTEM_PROMPT = """You are a master-level Chinese astrology analyst specializing
 3. NEVER reverse-engineer from known facts
 4. NEVER use a single perspective to judge
 5. NEVER split major luck cycles into fragments
+6. TIME IS SACRED: All time references (current luck cycle, future years, small limit) MUST be anchored to the current date provided in the user prompt. NEVER output past years as "future" analysis.
 
 ## Output Requirements (纯中文输出)
 - ALL output must be in CHINESE ONLY
@@ -130,12 +131,33 @@ class BirthInfo(BaseModel):
 
 def build_user_prompt(info: BirthInfo) -> str:
     now = datetime.now()
-    current_date_str = f"{now.year}年{now.month}月{now.day}日"
+    current_year = now.year
+    birth_year = int(info.birth_date.split("-")[0])
+    current_age = current_year - birth_year
 
-    return f"""请为以下用户生成完整的八字+紫微斗数双语命理报告。
+    # 计算未来三年流年
+    future_years = [current_year + 1, current_year + 2, current_year + 3]
 
-## 当前日期
-**今天是{current_date_str}**。所有关于"当前大运"和"未来3年流年"的分析都必须以这个日期为基准。
+    return f"""请为以下用户生成完整的八字+紫微斗数命理报告。
+
+## ⚠️ 时间基准（最高优先级）
+
+**今天是{now.year}年{now.month}月{now.day}日。**
+
+所有涉及时间的推理必须严格基于此日期。以下是已计算好的时间参数，不得自行推算：
+
+- **当前年份**：{current_year}年
+- **用户年龄**：{current_age}岁
+- **当前大运**：用户目前所在的大运周期（从起运年龄开始，每十年一步，请以{current_year}年为基准判断）
+- **未来三年流年**：{future_years[0]}年、{future_years[1]}年、{future_years[2]}年
+- **流年干支推导**：以{current_year}年为基准，按天干地支循环推算{future_years[0]}-{future_years[2]}年的干支
+
+**时间推理铁律**：
+1. 绝对禁止输出已经过去的年份作为"未来流年"
+2. 所有"当前"、"目前"、"近年"的描述都以{current_year}年为准
+3. "未来3年"指的是{future_years[0]}-{future_years[2]}，不可偏移
+4. 小限计算以{current_year}年为当前年小限
+5. 如果用户出生日期距今超过100年，报告应在开头提醒核实出生年份
 
 ## 用户信息
 - 姓名：{info.name}
