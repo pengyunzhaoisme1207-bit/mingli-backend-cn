@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 import time
+from datetime import datetime
 from pathlib import Path
 
 from openai import OpenAI
@@ -128,7 +129,13 @@ class BirthInfo(BaseModel):
 
 
 def build_user_prompt(info: BirthInfo) -> str:
+    now = datetime.now()
+    current_date_str = f"{now.year}年{now.month}月{now.day}日"
+
     return f"""请为以下用户生成完整的八字+紫微斗数双语命理报告。
+
+## 当前日期
+**今天是{current_date_str}**。所有关于"当前大运"和"未来3年流年"的分析都必须以这个日期为基准。
 
 ## 用户信息
 - 姓名：{info.name}
